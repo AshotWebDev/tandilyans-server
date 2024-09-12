@@ -13,7 +13,7 @@ app.use(cors())
 app.use(express.json());
 
 
-app.post('/api/products', (req, res) => {
+app.post('/api/products',async(req, res) => {
     const {productName,price,img,description} = req.body;
     
     const product=new Product({
@@ -22,18 +22,18 @@ app.post('/api/products', (req, res) => {
         img,
         description
     })    
-     product.save();
+    await product.save();
     res.send({message:"added"});
 })
 
- app.get('/api/products', (req, res) => {
-    const products= Product.find();
+ app.get('/api/products',async (req, res) => {
+    const products=await Product.find();
     res.json(products);
  })
 
-app.get('/api/products/:id', (req, res) => {
+app.get('/api/products/:id',async (req, res) => {
     const id = req.params.id;
-    const product= Product.findById(id);
+    const product=await Product.findById(id);
     res.json(product);
 })
 
