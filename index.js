@@ -7,6 +7,7 @@ import Product from './models/productsModel.js';
 const app = express();
 const PORT = 4000;
 const db= connectDB();
+server.setTimeout(300000); 
 
 app.use(cors())
 
