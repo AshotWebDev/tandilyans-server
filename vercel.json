@@ -1,5 +1,5 @@
- {
-   "name": "tandilyans_back",
+ {  
+   "version": 2,
    "builds": [
      {
        "src": "index.js",
