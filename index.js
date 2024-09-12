@@ -6,14 +6,14 @@ import connectDB from './Utils/connection.js';
 import Product from './models/productsModel.js';
 const app = express();
 const PORT = 4000;
-const db=await connectDB();
+const db= connectDB();
 
 app.use(cors())
 
 app.use(express.json());
 
 
-app.post('/api/products', async(req, res) => {
+app.post('/api/products', (req, res) => {
     const {productName,price,img,description} = req.body;
     
     const product=new Product({
@@ -22,18 +22,18 @@ app.post('/api/products', async(req, res) => {
         img,
         description
     })    
-    await product.save();
+     product.save();
     res.send({message:"added"});
 })
 
- app.get('/api/products',async (req, res) => {
-    const products=await Product.find();
+ app.get('/api/products', (req, res) => {
+    const products= Product.find();
     res.json(products);
  })
 
-app.get('/api/products/:id', async(req, res) => {
+app.get('/api/products/:id', (req, res) => {
     const id = req.params.id;
-    const product=await Product.findById(id);
+    const product= Product.findById(id);
     res.json(product);
 })
 
@@ -49,9 +49,9 @@ app.get('/api/products/:id', async(req, res) => {
 // })
 
 
-app.delete('/api/products/:id',async (req, res) => {
+app.delete('/api/products/:id', (req, res) => {
     const id = req.params.id;
-    const product=await Product.findByIdAndDelete(id);
+    const product= Product.findByIdAndDelete(id);
     res.send({message:"deleted"});
 })
 
