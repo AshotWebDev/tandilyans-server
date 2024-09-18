@@ -1,10 +1,10 @@
 import mongoose, { Schema } from "mongoose";
 // Define the Cart schema
 const productsSchema = new mongoose.Schema({
-    name:{type:String, required:true},
-    price:{type:Number, required:true},
-    img:{type:String, required:true},
-    description:{type:String, required:true},
+    name:{type:String},
+    price:{type:Number},
+    img:{type:String },
+    description:{type:String},
 }, {
   timestamps: true  
 });
