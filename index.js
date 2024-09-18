@@ -1,144 +1,176 @@
 import express from 'express';
+import { products } from './products.js';
 import cors from 'cors';
-import { config } from 'dotenv';
-import multer from 'multer';
-import cloudinary from 'cloudinary';
-import bodyParser from 'body-parser';
-import Product from './models/productsModel.js';
+import { admins } from './admin.js';
 import connectDB from './Utils/connection.js';
+import { config } from 'dotenv';
+import Product from './models/productsModel.js';
+import multer from 'multer';
+import path from "path"
+import fs from 'fs';
+import { Buffer } from 'buffer';
+import { fileURLToPath } from 'url';
+import bodyParser from 'body-parser';
+import nodemailer from 'nodemailer';
+// import uuid from "uuid"
 
-config();
+config()
 const app = express();
-connectDB();
+const db = connectDB();
 
-app.use(cors());
+app.use(cors())
+
 app.use(express.json());
-app.use(bodyParser.json({ limit: '2000mb' }));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+app.use(bodyParser.json({ limit: '2000mb' })); // Set to 50mb, you can adjust the size limit
 app.use(bodyParser.urlencoded({ limit: '2000mb', extended: false, parameterLimit: 500000 }));
 
-// Cloudinary Configuration
-cloudinary.v2.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Multer Configuration for file handling
-const storage = multer.memoryStorage(); // Store file in memory
-const upload = multer({ storage: storage });
-
-// POST request for product creation with image upload to Cloudinary
-app.post('/api/products', upload.single('img'), async (req, res) => {
-  try {
-    const { productName, description, price } = req.body;
-    const file = req.file;
-
-    if (!file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/'); // Directory where files will be stored
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname)); // Unique filename
     }
-
-    // Upload the image to Cloudinary
-    const result = await cloudinary.v2.uploader.upload_stream(
-      { folder: 'uploads', resource_type: 'image' },
-      async (error, result) => {
-        if (error) {
-          console.error('Error uploading image:', error);
-          return res.status(500).json({ error: 'Failed to upload image to Cloudinary' });
+});
+const upload = multer({ storage: storage });
+// upload.single('image'),
+app.post('/api/products', upload.single('img'), async (req, res) => {
+    try {
+        // Access form fields and file
+        const { productName, description, price } = req.body;
+        const file = req.file;
+        const product = new Product({
+            name: productName,
+            price,
+            description,
+            img: `/uploads/${file.filename}`,//file.filename
+        })
+        await product.save();
+        // Handle form data and file
+        console.log('Product Name:', productName);
+        console.log('Description:', description);
+        console.log('Price:', price);
+        if (file) {
+            console.log('File:', file.filename); // File information
         }
 
-        // Create and save product
-        const product = new Product({
-          name: productName,
-          price,
-          description,
-          img: result.secure_url, // Cloudinary URL
-        });
-
-        await product.save();
+        // Respond with success message
         const products = await Product.find();
         res.status(200).json(products);
-      }
-    );
-
-    // Write the image buffer to Cloudinary
-    file.buffer.pipe(result);
-
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Failed to upload product' });
-  }
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ error: 'Failed to upload product' });
+    }
 });
 
 app.get('/api/products', async (req, res) => {
-  const products = await Product.find();
-  res.json(products.reverse());
-});
+    const products = await Product.find();
+    res.json(products.reverse());
+})
 
 app.get('/api/products/:id', async (req, res) => {
-  const id = req.params.id;
-  const product = await Product.findById(id);
-  res.json(product);
-});
+    const id = req.params.id;
+    const product = await Product.findById(id);
+    res.json(product);
+})
+
+
+
+
+
+// app.put('/api/products/:id', (req, res) => {
+//     const product = req.body;
+//     const index = products.findIndex((p) => p.id === req.params.id);
+//     products[index] = product;
+//     res.send(products);
+// })
+
 
 app.delete('/api/products/:id', async (req, res) => {
-  try {
-    const productId = req.params.id;
-    const product = await Product.findById(productId);
+    try {
+        const productId = req.params.id;
+        const product = await Product.findById(productId);
 
-    if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
+        if (!product) {
+            return res.status(404).json({ error: 'Product not found' });
+        }
+
+        // Delete image file from the server
+        const filePath = path.join(__dirname, 'uploads', path.basename(product.img));
+        fs.unlink(filePath, (err) => {
+            if (err) {
+                console.error('Error deleting file:', err);
+                return res.status(500).json({ error: 'Failed to delete file' });
+            }
+
+
+
+        });
+        // Delete product from database
+        await Product.findByIdAndDelete(productId)
+
+        // Respond with success message
+        const products = await Product.find();
+        res.status(200).json(products);
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({ error: 'Failed to delete product' });
     }
-
-    // Delete image from Cloudinary
-    const public_id = product.img.split('/').pop().split('.')[0]; // Extract Cloudinary public_id
-    await cloudinary.v2.uploader.destroy(public_id);
-
-    // Delete product from database
-    await Product.findByIdAndDelete(productId);
-
-    const products = await Product.find();
-    res.status(200).json(products);
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: 'Failed to delete product' });
-  }
 });
+
+
+
+// ==========================================
 
 app.get('/api/admins', (req, res) => {
-  res.json(admins);
-});
+    res.json(admins);
+})
+
+
+
+// =====================================
+
 
 app.post('/api/send-email', async (req, res) => {
-  const { fullName, productName, phone, message, email } = req.body;
+    const { fullName, productName, phone, message, email } = req.body;
 
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: 'your-email@gmail.com',
-      pass: 'your-email-password',
-    },
+    const transporter = nodemailer.createTransport({
+      service: 'gmail', // or use another email service
+      auth: {
+        user: 'ashotpoghosyan380@gmail.com', // replace with your email
+        pass: 'utriacrgjunftuvf', // replace with your email password
+      },
+    });
+  
+    const mailOptions = {
+      from: 'ashotpoghosyan380@gmail.com', // sender address
+      to: 'poghosyan.01@list.ru',   // recipient email
+      subject: `New Order from ${fullName}`, // Subject line
+      text: `You have a new order:\n
+             Full Name: ${fullName}\n
+             Email: ${email}\n
+             ${productName && `Product Name: ${productName}\n`}
+            ${phone && `Phone: ${phone}\n`}  
+             Message: ${message}`,
+    };
+  
+    try {
+      // Send the email
+      await transporter.sendMail(mailOptions);
+      res.status(200).send({text: 'Պատվերը հաջողությամբ կատարվել է։ Մենք կապ կհաստատենք ձեզ հետ 24 ժամվա ընթացքում։', variant: 'success'});
+    } catch (error) {
+      console.error('Error sending email:', error);
+      res.status(500).send({text: 'Սխալ։ Խնդրում ենք կրկին փորձել։', variant: 'destructive'});
+    }
   });
 
-  const mailOptions = {
-    from: 'your-email@gmail.com',
-    to: 'recipient-email@gmail.com',
-    subject: `New Order from ${fullName}`,
-    text: `You have a new order:\n
-           Full Name: ${fullName}\n
-           Email: ${email}\n
-           ${productName && `Product Name: ${productName}\n`}
-           ${phone && `Phone: ${phone}\n`}
-           Message: ${message}`,
-  };
 
-  try {
-    await transporter.sendMail(mailOptions);
-    res.status(200).send({ text: 'Order successfully placed. We will contact you within 24 hours.', variant: 'success' });
-  } catch (error) {
-    console.error('Error sending email:', error);
-    res.status(500).send({ text: 'Error. Please try again.', variant: 'destructive' });
-  }
+// ======================================
+
+app.listen(process.env.PORT, () => {
+    console.log("Server started on port 4000");
 });
-
-// Export the app as a handler for Vercel
-export default app;
