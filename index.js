@@ -78,7 +78,21 @@ app.get('/api/products/:id', async (req, res) => {
     res.json(product);
 })
 
-
+app.get("/:image",(req,res)=>{
+    try {
+      const image = req.params.image;
+      const imagePath = path.join(__dirname,"..", "uploads", image);
+    
+      // Check if the file exists
+      if (image && imagePath) {
+        res.sendFile(imagePath);
+      } else {
+        res.status(404).send("Image not found");
+      }
+    } catch (error) {
+      console.error(error)
+    }
+  })
 
 
 
