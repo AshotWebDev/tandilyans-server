@@ -23,7 +23,7 @@ app.use(cors())
 app.use(express.json());
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(bodyParser.json({ limit: '2000mb' })); // Set to 50mb, you can adjust the size limit
 app.use(bodyParser.urlencoded({ limit: '2000mb', extended: false, parameterLimit: 500000 }));
