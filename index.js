@@ -27,11 +27,11 @@ const db = connectDB();
 app.use(cors())
 
 app.use(express.json());
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-const upload = multer({ dest: 'uploads/' }); // Store locally temporarily for processing
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// const upload = multer({ dest: 'uploads/' }); // Store locally temporarily for processing
 
 
 app.post('/api/products/add', upload.single('img'), async (req, res) => {
@@ -72,7 +72,7 @@ app.post('/api/products/add', upload.single('img'), async (req, res) => {
         await product.save();
 
         // Clean up the temporary file
-        fs.unlinkSync(file.path);
+        // fs.unlinkSync(file.path);
 
         const products = await Product.find();
         res.status(200).json(products);
