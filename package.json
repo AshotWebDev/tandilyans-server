@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.1691.0",
+    "axios": "^1.7.7",
     "body-parser": "^1.20.3",
     "buffer": "^6.0.3",
     "Buffer": "^0.0.0",
@@ -19,6 +20,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.20.0",
+    "form-data": "^4.0.0",
     "mongoose": "^8.6.2",
     "multer": "^1.4.5-lts.1",
     "multer-s3": "^3.0.1",

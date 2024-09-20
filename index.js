@@ -12,6 +12,9 @@ import { Buffer } from 'buffer';
 import { fileURLToPath } from 'url';
 import bodyParser from 'body-parser';
 import nodemailer from 'nodemailer';
+import FormData from 'form-data';
+
+import axios from 'axios';
 // import uuid from "uuid"
 
 config()
@@ -23,26 +26,76 @@ app.use(cors())
 app.use(express.json());
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-app.use(bodyParser.json({ limit: '2000mb' })); // Set to 50mb, you can adjust the size limit
-app.use(bodyParser.urlencoded({ limit: '2000mb', extended: false, parameterLimit: 500000 }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const upload = multer({ dest: 'uploads/' }); // Store locally temporarily for processing
 
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const dir = 'uploads/';
-        // Create the directory if it doesn't exist
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
+
+app.post('/api/products/add', upload.single('img'), async (req, res) => {
+    try {
+        const { productName, description, price } = req.body;
+        const file = req.file;
+
+        if (!file) {
+            return res.status(400).json({ error: 'No file uploaded' });
         }
-        cb(null, dir);
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname));
+
+        // Create a readable stream for the uploaded file
+        const fileStream = fs.createReadStream(file.path);
+
+        // Create FormData and append the file stream
+        const formData = new FormData();
+        formData.append('file', fileStream);
+        formData.append('upload_preset', process.env.CLOUDINARY_UPLOAD_PRESET);
+
+        // Upload to Cloudinary
+        const cloudinaryRes = await axios.post(`https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload`, formData, {
+            headers: {
+                ...formData.getHeaders(),
+            },
+        });
+
+        // Get the image URL from the response
+        const imageUrl = cloudinaryRes.data.secure_url;
+
+        // Create a new product
+        const product = new Product({
+            name: productName,
+            price,
+            description,
+            img: imageUrl,
+        });
+
+        await product.save();
+
+        // Clean up the temporary file
+        fs.unlinkSync(file.path);
+
+        const products = await Product.find();
+        res.status(200).json(products);
+    } catch (error) {
+        console.error('Error uploading product:', error.message);
+        res.status(500).json({ error: 'Failed to upload product' });
     }
 });
+// app.use(bodyParser.json({ limit: '2000mb' })); // Set to 50mb, you can adjust the size limit
+// app.use(bodyParser.urlencoded({ limit: '2000mb', extended: false, parameterLimit: 500000 }));
 
-const upload = multer({ storage: storage });
+// const storage = multer.diskStorage({
+//     destination: function (req, file, cb) {
+//         const dir = 'uploads/';
+//         // Create the directory if it doesn't exist
+//         if (!fs.existsSync(dir)) {
+//             fs.mkdirSync(dir, { recursive: true });
+//         }
+//         cb(null, dir);
+//     },
+//     filename: function (req, file, cb) {
+//         cb(null, Date.now() + path.extname(file.originalname));
+//     }
+// });
+
+// const upload = multer({ storage: storage });
 // const storage = multer.diskStorage({
     
 //     destination: function (req, file, cb) {
@@ -67,50 +120,50 @@ app.get('/api/products/:id', async (req, res) => {
     const product = await Product.findById(id);
     res.json(product);
 })
-app.post('/api/products/add', upload.single('img'), async (req, res) => {
-    try {
-        // Access form fields and file
-        const { productName, description, price } = req.body;
-        const file = req.file;
-        const product = new Product({
-            name: productName,
-            price,
-            description,
-            img: `/uploads/${file.filename}`,//file.filename
-        })
-        await product.save();
-        // Handle form data and file
-        // console.log('Product Name:', productName);
-        // console.log('Description:', description);
-        // console.log('Price:', price);
-        if (file) {
-            console.log('File:', file.filename); // File information
-        }
+// app.post('/api/products/add', upload.single('img'), async (req, res) => {
+//     try {
+//         // Access form fields and file
+//         const { productName, description, price } = req.body;
+//         const file = req.file;
+//         const product = new Product({
+//             name: productName,
+//             price,
+//             description,
+//             img: `/uploads/${file.filename}`,//file.filename
+//         })
+//         await product.save();
+//         // Handle form data and file
+//         // console.log('Product Name:', productName);
+//         // console.log('Description:', description);
+//         // console.log('Price:', price);
+//         if (file) {
+//             console.log('File:', file.filename); // File information
+//         }
 
-        // Respond with success message
-        const products = await Product.find();
-        res.status(200).json(products);
-    } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({ error: 'Failed to upload product' });
-    }
-});
+//         // Respond with success message
+//         const products = await Product.find();
+//         res.status(200).json(products);
+//     } catch (error) {
+//         console.error('Error:', error);
+//         res.status(500).json({ error: 'Failed to upload product' });
+//     }
+// });
 
-app.get("/:image",(req,res)=>{
-    try {
-      const image = req.params.image;
-      const imagePath = path.join(__dirname,"..", "uploads", image);
+// app.get("/:image",(req,res)=>{
+//     try {
+//       const image = req.params.image;
+//       const imagePath = path.join(__dirname,"..", "uploads", image);
     
-      // Check if the file exists
-      if (image && imagePath) {
-        res.sendFile(imagePath);
-      } else {
-        res.status(404).send("Image not found");
-      }
-    } catch (error) {
-      console.error(error)
-    }
-  })
+//       // Check if the file exists
+//       if (image && imagePath) {
+//         res.sendFile(imagePath);
+//       } else {
+//         res.status(404).send("Image not found");
+//       }
+//     } catch (error) {
+//       console.error(error)
+//     }
+//   })
 
 
 
