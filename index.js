@@ -24,14 +24,14 @@ config()
 const app = express();
 const db = connectDB();
 
-// app.use(cors())
+app.use(cors())
 
 app.use(express.json());
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = path.dirname(__filename);
 
 // app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-// const upload = multer({ dest: 'uploads/' }); // Store locally temporarily for processing
+const upload = multer({ dest: 'uploads/' }); // Store locally temporarily for processing
 
 
 app.post('/api/products/add', upload.single('img'), async (req, res) => {
