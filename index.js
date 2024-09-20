@@ -16,6 +16,9 @@ import FormData from 'form-data';
 
 import axios from 'axios';
 // import uuid from "uuid"
+console.log("process.env.CLOUDINARY_UPLOAD_PRESET", process.env.CLOUDINARY_UPLOAD_PRESET);
+console.log("process.env.CLOUDINARY_CLOUD_NAME", process.env.CLOUDINARY_CLOUD_NAME);
+
 
 config()
 const app = express();
