@@ -24,7 +24,7 @@ config()
 const app = express();
 const db = connectDB();
 
-app.use(cors())
+// app.use(cors())
 
 app.use(express.json());
 // const __filename = fileURLToPath(import.meta.url);
