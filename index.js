@@ -39,12 +39,12 @@ app.post('/api/products/add', upload.single('img'), async (req, res) => {
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
-        // Create a readable stream for the uploaded file
-        const fileStream = fs.createReadStream(file.path);
+        // Create a buffer from the uploaded file
+        const fileBuffer = fs.readFileSync(file.path);
 
-        // Create FormData and append the file stream
+        // Create FormData and append the file buffer
         const formData = new FormData();
-        formData.append('file', fileStream);
+        formData.append('file', fileBuffer, file.originalname); // Add file buffer and original name
         formData.append('upload_preset', process.env.CLOUDINARY_UPLOAD_PRESET);
 
         // Upload to Cloudinary
@@ -68,7 +68,7 @@ app.post('/api/products/add', upload.single('img'), async (req, res) => {
         await product.save();
 
         // Clean up the temporary file
-        fs.unlinkSync(file.path);
+        fs.unlinkSync(file.path); // Remove if you still want to keep local files temporarily, else skip this line
 
         const products = await Product.find();
         res.status(200).json(products);
