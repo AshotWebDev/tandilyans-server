@@ -12,13 +12,9 @@ import { Buffer } from 'buffer';
 import { fileURLToPath } from 'url';
 import bodyParser from 'body-parser';
 import nodemailer from 'nodemailer';
-import FormData from 'form-data';
-
 import axios from 'axios';
+import FormData from 'form-data';
 // import uuid from "uuid"
-console.log("process.env.CLOUDINARY_UPLOAD_PRESET", process.env.CLOUDINARY_UPLOAD_PRESET);
-console.log("process.env.CLOUDINARY_CLOUD_NAME", process.env.CLOUDINARY_CLOUD_NAME);
-
 
 config()
 const app = express();
@@ -27,10 +23,10 @@ const db = connectDB();
 app.use(cors())
 
 app.use(express.json());
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const upload = multer({ dest: 'uploads/' }); // Store locally temporarily for processing
 
 
@@ -72,7 +68,7 @@ app.post('/api/products/add', upload.single('img'), async (req, res) => {
         await product.save();
 
         // Clean up the temporary file
-        // fs.unlinkSync(file.path);
+        fs.unlinkSync(file.path);
 
         const products = await Product.find();
         res.status(200).json(products);
