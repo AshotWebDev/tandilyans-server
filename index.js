@@ -28,38 +28,35 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(bodyParser.json({ limit: '2000mb' })); // Set to 50mb, you can adjust the size limit
 app.use(bodyParser.urlencoded({ limit: '2000mb', extended: false, parameterLimit: 500000 }));
 
-const storage = multer.memoryStorage();
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/'); // Directory where files will be stored
+    },
+    filename: function (req, file, cb) {
+        cb(null, Date.now() + path.extname(file.originalname)); // Unique filename
+    }
+});
 const upload = multer({ storage: storage });
-
+// upload.single('image'),
 app.post('/api/products', upload.single('img'), async (req, res) => {
     try {
         // Access form fields and file
         const { productName, description, price } = req.body;
         const file = req.file;
-
-        if (!file) {
-            return res.status(400).json({ error: 'No file uploaded' });
-        }
-
-        // For demonstration, let's log the file buffer and filename
-        console.log('File buffer:', file.buffer);
-        console.log('File original name:', file.originalname);
-
-        // Here, you should implement the logic to upload the file to a cloud service
-        // and get the URL or handle the file data as needed.
-
-        // Example: Convert buffer to base64 (not recommended for large files)
-        const imgBase64 = file.buffer.toString('base64');
-        
-        // Create a new product with the image data
         const product = new Product({
             name: productName,
             price,
             description,
-            img: imgBase64, // Store base64 data or URL if uploaded elsewhere
-        });
-
+            img: `/uploads/${file.filename}`,//file.filename
+        })
         await product.save();
+        // Handle form data and file
+        // console.log('Product Name:', productName);
+        // console.log('Description:', description);
+        // console.log('Price:', price);
+        if (file) {
+            console.log('File:', file.filename); // File information
+        }
 
         // Respond with success message
         const products = await Product.find();
@@ -92,6 +89,7 @@ app.get('/api/products/:id', async (req, res) => {
 //     res.send(products);
 // })
 
+
 app.delete('/api/products/:id', async (req, res) => {
     try {
         const productId = req.params.id;
@@ -101,20 +99,19 @@ app.delete('/api/products/:id', async (req, res) => {
             return res.status(404).json({ error: 'Product not found' });
         }
 
-        // Construct the file path for deletion
+        // Delete image file from the server
         const filePath = path.join(__dirname, 'uploads', path.basename(product.img));
-
-        // Delete the file from the local file system
         fs.unlink(filePath, (err) => {
             if (err) {
                 console.error('Error deleting file:', err);
                 return res.status(500).json({ error: 'Failed to delete file' });
             }
-            console.log('File deleted successfully');
-        });
 
-        // Delete product from the database
-        await Product.findByIdAndDelete(productId);
+
+
+        });
+        // Delete product from database
+        await Product.findByIdAndDelete(productId)
 
         // Respond with success message
         const products = await Product.find();
@@ -124,6 +121,7 @@ app.delete('/api/products/:id', async (req, res) => {
         res.status(500).json({ error: 'Failed to delete product' });
     }
 });
+
 
 
 // ==========================================
