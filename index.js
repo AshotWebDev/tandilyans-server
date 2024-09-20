@@ -30,7 +30,7 @@ app.use(bodyParser.urlencoded({ limit: '2000mb', extended: false, parameterLimit
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/'); // Directory where files will be stored
+        cb(null, '/uploads/'); // Directory where files will be stored
     },
     filename: function (req, file, cb) {
         cb(null, Date.now() + path.extname(file.originalname)); // Unique filename
