@@ -28,9 +28,16 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(bodyParser.json({ limit: '2000mb' })); // Set to 50mb, you can adjust the size limit
 app.use(bodyParser.urlencoded({ limit: '2000mb', extended: false, parameterLimit: 500000 }));
 
+
 const storage = multer.diskStorage({
+    
     destination: function (req, file, cb) {
-        cb(null, '/uploads/'); // Directory where files will be stored
+        const dir = './uploads';
+
+if (!fs.existsSync(dir)) {
+  fs.mkdirSync(dir);
+}
+        cb(null, 'uploads/'); // Directory where files will be stored
     },
     filename: function (req, file, cb) {
         cb(null, Date.now() + path.extname(file.originalname)); // Unique filename
