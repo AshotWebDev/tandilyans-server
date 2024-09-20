@@ -67,7 +67,7 @@ app.get('/api/products/:id', async (req, res) => {
     const product = await Product.findById(id);
     res.json(product);
 })
-app.post('/api/products', upload.single('img'), async (req, res) => {
+app.post('/api/products/add', upload.single('img'), async (req, res) => {
     try {
         // Access form fields and file
         const { productName, description, price } = req.body;
