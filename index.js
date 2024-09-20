@@ -38,6 +38,18 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 // upload.single('image'),
+
+
+app.get('/api/products', async (req, res) => {
+    const products = await Product.find();
+    res.json(products.reverse());
+})
+
+app.get('/api/products/:id', async (req, res) => {
+    const id = req.params.id;
+    const product = await Product.findById(id);
+    res.json(product);
+})
 app.post('/api/products', upload.single('img'), async (req, res) => {
     try {
         // Access form fields and file
@@ -66,17 +78,6 @@ app.post('/api/products', upload.single('img'), async (req, res) => {
         res.status(500).json({ error: 'Failed to upload product' });
     }
 });
-
-app.get('/api/products', async (req, res) => {
-    const products = await Product.find();
-    res.json(products.reverse());
-})
-
-app.get('/api/products/:id', async (req, res) => {
-    const id = req.params.id;
-    const product = await Product.findById(id);
-    res.json(product);
-})
 
 app.get("/:image",(req,res)=>{
     try {
