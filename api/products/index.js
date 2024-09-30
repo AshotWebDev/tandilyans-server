@@ -1,7 +1,9 @@
+import express from 'express';
 import Product from '../../models/productsModel.js';
 import connectDB from '../../Utils/connection.js';
 
-export default async function handler(req, res) {
+    const router = express.Router();
+ async function handler(req, res) {
   await connectDB();
 
   if (req.method === 'GET') {
@@ -15,3 +17,10 @@ export default async function handler(req, res) {
     res.status(405).json({ error: 'Method not allowed' });
   }
 }
+
+
+router.get('/', handler)
+
+
+export default router
+

@@ -1,9 +1,12 @@
 import multer from 'multer';
 import fs from 'fs';
 import axios from 'axios';
-import Product from '../../models/productsModel';
-import connectDB from '../../Utils/connection';
+import Product from '../../models/productsModel.js';
+import connectDB from '../../Utils/connection.js';
 import FormData from 'form-data';
+import express from 'express';
+
+const router = express.Router();
 
 export const config = {
   api: {
@@ -56,4 +59,8 @@ async function handler(req, res) {
   });
 }
 
-export default handler;
+router.post('/', handler);
+
+
+
+export default router;
